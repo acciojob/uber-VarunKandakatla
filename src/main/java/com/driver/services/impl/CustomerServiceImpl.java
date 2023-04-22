@@ -12,6 +12,7 @@ import com.driver.repository.DriverRepository;
 import com.driver.repository.TripBookingRepository;
 import com.driver.model.TripStatus;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,21 +49,23 @@ public class CustomerServiceImpl implements CustomerService {
 		//Avoid using SQL query
 		List<Driver> driverList=driverRepository2.findAll();
 
+		Collections.sort(driverList,(a,b)->{
+			return a.getDriverId()-b.getDriverId();
+		});
+
 		for(Driver driver: driverList)
 		{
 			if(driver.getCab().isAvailable()==true)
 			{
 				TripBooking tripBooking=new TripBooking();
+				tripBooking.setStatus(TripStatus.CONFIRMED);
+				tripBooking.setDistanceInKm(distanceInKm);
 				tripBooking.setFromLocation(fromLocation);
 				tripBooking.setToLocation(toLocation);
-				tripBooking.setDistanceInKm(distanceInKm);
-				tripBooking.setStatus(TripStatus.CONFIRMED);
+				tripBooking.setDriver(driver);
+				tripBooking.setCustomer(customerRepository2.findById(customerId).get());
 
 				Customer customer=customerRepository2.findById(customerId).get();
-
-				tripBooking.setCustomer(customer);
-				tripBooking.setDriver(driver);
-
 				customer.getTripBookingList().add(tripBooking);
 
 				driver.getTripBookingList().add(tripBooking);
@@ -84,6 +87,7 @@ public class CustomerServiceImpl implements CustomerService {
 		//Cancel the trip having given trip Id and update TripBooking attributes accordingly
 		TripBooking tripBooking=tripBookingRepository2.findById(tripId).get();
 		tripBooking.setStatus(TripStatus.CANCELED);
+		tripBooking.getDriver().getCab().setAvailable(true);
 		tripBookingRepository2.save(tripBooking);
 
 
@@ -94,6 +98,8 @@ public class CustomerServiceImpl implements CustomerService {
 		//Complete the trip having given trip Id and update TripBooking attributes accordingly
 		TripBooking tripBooking=tripBookingRepository2.findById(tripId).get();
 		tripBooking.setStatus(TripStatus.COMPLETED);
+		tripBooking.setBill(tripBooking.getDistanceInKm()*tripBooking.getDriver().getCab().getPerKmRate());
+		tripBooking.getDriver().getCab().setAvailable(true);
 		tripBookingRepository2.save(tripBooking);
 
 	}
