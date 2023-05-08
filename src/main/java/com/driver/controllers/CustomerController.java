@@ -37,5 +37,6 @@ public class CustomerController {
 
 	@DeleteMapping("/cancelTrip")
 	public void cancelTrip(@RequestParam Integer tripId){
+		customerService.cancelTrip(tripId);
 	}
 }
